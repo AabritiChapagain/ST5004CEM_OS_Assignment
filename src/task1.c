@@ -8,8 +8,104 @@
 #define ITERATIONS 200000
 
 long shared_counter = 0;
-
 pthread_mutex_t counter_lock;
+typedef struct
+{
+    int pid;
+    int burst_time;
+    int remaining_time;
+    int completion_time;
+    int turnaround_time;
+    int waiting_time;
+} Process;
+
+void run_round_robin()
+{
+    printf("\n========== Round Robin Scheduling ==========\n");
+
+    const int quantum = 4;
+    const int num_processes = 5;
+
+    Process processes[5] =
+    {
+        {1, 10, 10, 0, 0, 0},
+        {2, 5, 5, 0, 0, 0},
+        {3, 8, 8, 0, 0, 0},
+        {4, 3, 3, 0, 0, 0},
+        {5, 6, 6, 0, 0, 0}
+    };
+
+    int completed = 0;
+    int current_time = 0;
+
+    printf("Time Quantum = %d ms\n\n", quantum);
+
+    while (completed < num_processes)
+    {
+        for (int i = 0; i < num_processes; i++)
+        {
+            if (processes[i].remaining_time > 0)
+            {
+                int run_time;
+
+                if (processes[i].remaining_time > quantum)
+                    run_time = quantum;
+                else
+                    run_time = processes[i].remaining_time;
+
+                printf("Time %2d -> %2d : Process P%d executes for %d ms\n",
+                       current_time,
+                       current_time + run_time,
+                       processes[i].pid,
+                       run_time);
+
+                current_time += run_time;
+                processes[i].remaining_time -= run_time;
+
+                if (processes[i].remaining_time == 0)
+                {
+                    completed++;
+
+                    processes[i].completion_time = current_time;
+                    processes[i].turnaround_time = current_time;
+                    processes[i].waiting_time =
+                        processes[i].turnaround_time -
+                        processes[i].burst_time;
+
+                    printf("Process P%d completed.\n",
+                           processes[i].pid);
+                }
+            }
+        }
+    }
+
+    double total_wait = 0;
+    double total_turnaround = 0;
+
+    printf("\n-------------------------------------------------------------\n");
+    printf("PID\tBurst\tCompletion\tTurnaround\tWaiting\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < num_processes; i++)
+    {
+        printf("%d\t%d\t%d\t\t%d\t\t%d\n",
+               processes[i].pid,
+               processes[i].burst_time,
+               processes[i].completion_time,
+               processes[i].turnaround_time,
+               processes[i].waiting_time);
+
+        total_wait += processes[i].waiting_time;
+        total_turnaround += processes[i].turnaround_time;
+    }
+
+    printf("\nAverage Waiting Time    : %.2f ms\n",
+           total_wait / num_processes);
+
+    printf("Average Turnaround Time : %.2f ms\n",
+           total_turnaround / num_processes);
+}
+
 void *safe_increment(void *arg)
 {
     (void)arg;
@@ -169,13 +265,14 @@ int main()
     printf("ST5004CEM Task 1\n");
 
     run_process_creation();
- 
-    run_basic_threads();   
-  
+
+    run_basic_threads();
+
     run_race_condition();
 
-   run_mutex_demo();
-   
+    run_mutex_demo();
+
+    run_round_robin();
+
     return 0;
 }
-
