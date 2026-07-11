@@ -1,31 +1,35 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include <pthread.h>
 
-void* task(void* arg)
+void run_process_creation()
 {
-    int id = *(int*)arg;
-    printf("Thread %d is running\n", id);
-    return NULL;
+    pid_t pid = fork();
+
+    if(pid == 0)
+    {
+        printf("\nChild Process\n");
+        printf("Child PID: %d\n", getpid());
+        printf("Parent PID: %d\n", getppid());
+        exit(0);
+    }
+    else
+    {
+        wait(NULL);
+
+        printf("\nParent Process\n");
+        printf("Parent PID: %d\n", getpid());
+        printf("Child PID: %d\n", pid);
+    }
 }
 
 int main()
 {
-    pthread_t threads[5];
-    int ids[5] = {1, 2, 3, 4, 5};
+    printf("ST5004CEM Task 1\n");
 
-    // Create 5 threads
-    for (int i = 0; i < 5; i++)
-    {
-        pthread_create(&threads[i], NULL, task, &ids[i]);
-    }
-
-    // Wait for all 5 threads to finish
-    for (int i = 0; i < 5; i++)
-    {
-        pthread_join(threads[i], NULL);
-    }
-
-    printf("All threads finished.\n");
+    run_process_creation();
 
     return 0;
 }
