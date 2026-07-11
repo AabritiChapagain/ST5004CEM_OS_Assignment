@@ -4,6 +4,9 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #define NUM_THREADS 5
+
+#define ITERATIONS 200000
+long shared_counter = 0;
 void run_process_creation()
 {
     pid_t pid = fork();
@@ -60,13 +63,61 @@ void run_basic_threads()
 
     printf("All threads have completed.\n");
 }
+void *unsafe_increment(void *arg)
+{
+    (void)arg;
+
+    for (int i = 0; i < ITERATIONS; i++)
+    {
+        shared_counter++;
+    }
+
+    return NULL;
+}
+void run_race_condition()
+{
+    printf("\n========== Race Condition Demonstration ==========\n");
+
+    shared_counter = 0;
+
+    pthread_t threads[NUM_THREADS];
+
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        pthread_create(&threads[i], NULL, unsafe_increment, NULL);
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    long expected = NUM_THREADS * ITERATIONS;
+
+    printf("Expected Counter Value : %ld\n", expected);
+    printf("Actual Counter Value   : %ld\n", shared_counter);
+
+    if (shared_counter != expected)
+    {
+        printf("Race condition detected!\n");
+        printf("%ld updates were lost.\n", expected - shared_counter);
+    }
+    else
+    {
+        printf("No race condition observed this run.\n");
+        printf("Try running the program again.\n");
+    }
+}
+
 int main()
 {
     printf("ST5004CEM Task 1\n");
 
     run_process_creation();
-
+ 
     run_basic_threads();   
+  
+    run_race_condition();
 
     return 0;
 }
