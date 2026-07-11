@@ -9,6 +9,8 @@
 
 long shared_counter = 0;
 pthread_mutex_t counter_lock;
+pthread_mutex_t lockA;
+pthread_mutex_t lockB;
 typedef struct
 {
     int pid;
@@ -19,6 +21,132 @@ typedef struct
     int waiting_time;
 } Process;
 
+void *deadlock_prone_thread1(void *arg)
+{
+    (void)arg;
+
+    printf("Thread 1: Locking Mutex A...\n");
+    pthread_mutex_lock(&lockA);
+
+    usleep(50000);
+
+    printf("Thread 1: Trying to lock Mutex B...\n");
+
+    int attempts = 0;
+
+    while (pthread_mutex_trylock(&lockB) != 0)
+    {
+        attempts++;
+
+        if (attempts > 5)
+        {
+            printf("Thread 1: Could not lock Mutex B. Releasing Mutex A to avoid deadlock.\n");
+            pthread_mutex_unlock(&lockA);
+            return NULL;
+        }
+
+        usleep(10000);
+    }
+
+    printf("Thread 1: Locked both mutexes.\n");
+
+    pthread_mutex_unlock(&lockB);
+    pthread_mutex_unlock(&lockA);
+
+    return NULL;
+}
+void *deadlock_prone_thread2(void *arg)
+{
+    (void)arg;
+
+    printf("Thread 2: Locking Mutex B...\n");
+    pthread_mutex_lock(&lockB);
+
+    usleep(50000);
+
+    printf("Thread 2: Trying to lock Mutex A...\n");
+
+    int attempts = 0;
+
+    while (pthread_mutex_trylock(&lockA) != 0)
+    {
+        attempts++;
+
+        if (attempts > 5)
+        {
+            printf("Thread 2: Could not lock Mutex A. Releasing Mutex B to avoid deadlock.\n");
+            pthread_mutex_unlock(&lockB);
+            return NULL;
+        }
+
+        usleep(10000);
+    }
+
+    printf("Thread 2: Locked both mutexes.\n");
+
+    pthread_mutex_unlock(&lockA);
+    pthread_mutex_unlock(&lockB);
+
+    return NULL;
+}
+void *safe_thread1(void *arg)
+{
+    (void)arg;
+
+    pthread_mutex_lock(&lockA);
+    usleep(20000);
+    pthread_mutex_lock(&lockB);
+
+    printf("Safe Thread 1: Working...\n");
+
+    pthread_mutex_unlock(&lockB);
+    pthread_mutex_unlock(&lockA);
+
+    return NULL;
+}
+void *safe_thread2(void *arg)
+{
+    (void)arg;
+
+    pthread_mutex_lock(&lockA);
+    usleep(20000);
+    pthread_mutex_lock(&lockB);
+
+    printf("Safe Thread 2: Working...\n");
+
+    pthread_mutex_unlock(&lockB);
+    pthread_mutex_unlock(&lockA);
+
+    return NULL;
+}
+void run_deadlock_demo()
+{
+    printf("\n========== Deadlock Prevention ==========\n");
+
+    pthread_mutex_init(&lockA, NULL);
+    pthread_mutex_init(&lockB, NULL);
+
+    pthread_t t1, t2;
+
+    printf("\n--- Deadlock-Prone Example ---\n");
+
+    pthread_create(&t1, NULL, deadlock_prone_thread1, NULL);
+    pthread_create(&t2, NULL, deadlock_prone_thread2, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("\n--- Deadlock Prevention Using Lock Ordering ---\n");
+
+    pthread_create(&t1, NULL, safe_thread1, NULL);
+    pthread_create(&t2, NULL, safe_thread2, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    pthread_mutex_destroy(&lockA);
+    pthread_mutex_destroy(&lockB);
+}
 void run_round_robin()
 {
     printf("\n========== Round Robin Scheduling ==========\n");
@@ -263,16 +391,16 @@ void run_race_condition()
 int main()
 {
     printf("ST5004CEM Task 1\n");
+run_process_creation();
 
-    run_process_creation();
+run_basic_threads();
 
-    run_basic_threads();
+run_race_condition();
 
-    run_race_condition();
+run_mutex_demo();
 
-    run_mutex_demo();
+run_round_robin();
 
-    run_round_robin();
-
-    return 0;
+run_deadlock_demo();
+   return 0;
 }
