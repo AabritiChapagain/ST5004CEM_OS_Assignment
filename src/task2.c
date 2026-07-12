@@ -177,6 +177,72 @@ Stats run_fifo(int *ref_string) {
 
     return s;
 }
+
+/* LRU PAGE REPLACEMENT
+   Evicts whichever page was used LEAST RECENTLY. */
+Stats run_lru(int *ref_string) {
+    Frame frames[FRAME_COUNT];
+
+    for (int i = 0; i < FRAME_COUNT; i++) {
+        frames[i].page_id   = -1;
+        frames[i].loaded_at = 0;
+        frames[i].last_used = 0;
+        memset(frames[i].data, 0, PAGE_SIZE);
+    }
+
+    Stats s = {0, 0};
+    int tick = 0;
+
+    print_header("LRU (Least Recently Used)", ref_string);
+
+    for (int i = 0; i < REF_LENGTH; i++) {
+
+        int ref = ref_string[i];
+        tick++;
+
+        int idx = find_page(frames, ref);
+
+        if (idx != -1) {
+
+            /* HIT — update last_used */
+            frames[idx].last_used = tick;
+            s.hits++;
+
+            print_frames(frames, ref, tick, 0);
+
+        } else {
+
+            /* PAGE FAULT */
+            s.faults++;
+
+            if (has_empty(frames)) {
+
+                int slot = first_empty(frames);
+                load_page(&frames[slot], ref, tick);
+
+            } else {
+
+                int lru = 0;
+
+                for (int j = 1; j < FRAME_COUNT; j++)
+                    if (frames[j].last_used < frames[lru].last_used)
+                        lru = j;
+
+                printf(YELLOW
+                       "	 ✕ Evicting P%d (last used at tick %d)\n"
+                       RESET,
+                       frames[lru].page_id,
+                       frames[lru].last_used);
+
+                load_page(&frames[lru], ref, tick);
+            }
+
+            print_frames(frames, ref, tick, 1);
+        }
+    }
+
+    return s;
+}
 int main(void)
 {
 
@@ -196,8 +262,15 @@ Pages 0–4 represent 5 distinct virtual pages.
 
     Stats fifo_stats = run_fifo(ref_string);
 
-    printf("\n");
+    printf("\n FIFO RESULTS \n");
     printf("Hits        : %d\n", fifo_stats.hits);
     printf("Page Faults : %d\n", fifo_stats.faults);
+
+   Stats lru_stats = run_lru(ref_string);
+
+    printf("\n");
+    printf("LRU Results\n");
+    printf("Hits        : %d\n", lru_stats.hits);
+    printf("Page Faults : %d\n", lru_stats.faults);
   return 0;
 }
