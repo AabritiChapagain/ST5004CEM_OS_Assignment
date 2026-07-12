@@ -86,7 +86,7 @@ void load_page(Frame *f, int page_id, int tick) {
 void print_header(const char *algo_name, int *ref_string) {
     printf(MAGENTA
         "\n╔══════════════════════════════════════════════════════╗\n"
-        "║  ST5004CEM Task 2 — Memory Management Simulation    ║\n"
+        "║  ST5004CEM Task 2 — Memory Management Simulation     ║\n"
         "╚══════════════════════════════════════════════════════╝\n"
         RESET);
 
@@ -111,8 +111,93 @@ void print_header(const char *algo_name, int *ref_string) {
     printf("┼──────────\n" RESET);
 }
 
+/* FIFO PAGE REPLACEMENT
+   Evicts whichever page was loaded FIRST (oldest).
+*/
+Stats run_fifo(int *ref_string) {
+    Frame frames[FRAME_COUNT];
+
+    for (int i = 0; i < FRAME_COUNT; i++) {
+        frames[i].page_id   = -1;
+        frames[i].loaded_at = 0;
+        frames[i].last_used = 0;
+        memset(frames[i].data, 0, PAGE_SIZE);
+    }
+
+    Stats s = {0, 0};
+    int tick = 0;
+
+    print_header("FIFO (First-In First-Out)", ref_string);
+
+    for (int i = 0; i < REF_LENGTH; i++) {
+
+        int ref = ref_string[i];
+        tick++;
+
+        int idx = find_page(frames, ref);
+
+        if (idx != -1) {
+
+            /* HIT */
+            frames[idx].last_used = tick;
+            s.hits++;
+
+            print_frames(frames, ref, tick, 0);
+
+        } else {
+
+            /* PAGE FAULT */
+            s.faults++;
+
+            if (has_empty(frames)) {
+
+                int slot = first_empty(frames);
+                load_page(&frames[slot], ref, tick);
+
+            } else {
+
+                int oldest = 0;
+
+                for (int j = 1; j < FRAME_COUNT; j++)
+                    if (frames[j].loaded_at < frames[oldest].loaded_at)
+                        oldest = j;
+
+                printf(RED
+                       "	 ✕ Evicting P%d (loaded earliest at tick %d)\n"
+                       RESET,
+                       frames[oldest].page_id,
+                       frames[oldest].loaded_at);
+
+                load_page(&frames[oldest], ref, tick);
+            }
+
+            print_frames(frames, ref, tick, 1);
+        }
+    }
+
+    return s;
+}
 int main(void)
 {
-    printf("ST5004CEM Task 2 - Memory Management Simulation\n");
-    return 0;
+
+	/* Reference string: the sequence of page numbers
+     * 	the CPU requests. This simulates a program
+     * 	accessing pages in this order.*/
+int ref_string[REF_LENGTH] =
+    {
+        0, 1, 2, 3,
+        0, 1, 4, 0,
+        1, 2, 3, 4
+    };
+/*
+Pages 0–4 represent 5 distinct virtual pages.
+     * With only 4 frames, the simulator must decide
+     * which page to evict when all frames are full.*/
+
+    Stats fifo_stats = run_fifo(ref_string);
+
+    printf("\n");
+    printf("Hits        : %d\n", fifo_stats.hits);
+    printf("Page Faults : %d\n", fifo_stats.faults);
+  return 0;
 }
