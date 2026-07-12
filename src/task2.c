@@ -255,7 +255,42 @@ void print_stats(const char *name, Stats s)
     printf("Page Faults : %d (%.1f%%)\n", s.faults, fault_ratio);
 }
 
+void print_comparison(Stats fifo, Stats lru)
+{
+    printf("\n                              \n");
+    printf("      Algorithm Comparison\n");
+    printf("                                \n");
 
+    printf("%-15s %-10s %-10s %-10s\n",
+           "Algorithm", "Hits", "Faults", "Hit Rate");
+
+    float fifo_hr = (float)fifo.hits / REF_LENGTH * 100.0f;
+    float lru_hr  = (float)lru.hits  / REF_LENGTH * 100.0f;
+
+    printf("%-15s %-10d %-10d %.1f%%\n",
+           "FIFO", fifo.hits, fifo.faults, fifo_hr);
+
+    printf("%-15s %-10d %-10d %.1f%%\n",
+           "LRU", lru.hits, lru.faults, lru_hr);
+
+    printf("\n");
+
+    if (lru.faults < fifo.faults)
+    {
+        printf("LRU produced fewer page faults than FIFO.\n");
+    }
+    else if (fifo.faults < lru.faults)
+    {
+        printf("FIFO produced fewer page faults than LRU.\n");
+    }
+    else
+    {
+        printf("Both algorithms produced the same number of page faults.\n");
+    }
+
+    printf("\nFIFO is simple to implement but may replace frequently used pages.\n");
+    printf("LRU keeps recently used pages in memory, so it often performs better.\n");
+}
 
 
 
@@ -285,5 +320,10 @@ Pages 0–4 represent 5 distinct virtual pages.
 
     printf("\n");
     print_stats("LRU", lru_stats);
+ 
+    print_comparison(fifo_stats, lru_stats);
+
+    printf("\nProgram completed successfully.\n");
+
   return 0;
 }
