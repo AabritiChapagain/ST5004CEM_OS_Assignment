@@ -243,6 +243,23 @@ Stats run_lru(int *ref_string) {
 
     return s;
 }
+
+void print_stats(const char *name, Stats s)
+{
+    float hit_ratio = (float)s.hits / REF_LENGTH * 100.0f;
+    float fault_ratio = (float)s.faults / REF_LENGTH * 100.0f;
+
+    printf("\n======== %s Results =========\n", name);
+    printf("References  : %d\n", REF_LENGTH);
+    printf("Hits        : %d (%.1f%%)\n", s.hits, hit_ratio);
+    printf("Page Faults : %d (%.1f%%)\n", s.faults, fault_ratio);
+}
+
+
+
+
+
+
 int main(void)
 {
 
@@ -262,15 +279,11 @@ Pages 0–4 represent 5 distinct virtual pages.
 
     Stats fifo_stats = run_fifo(ref_string);
 
-    printf("\n FIFO RESULTS \n");
-    printf("Hits        : %d\n", fifo_stats.hits);
-    printf("Page Faults : %d\n", fifo_stats.faults);
+   print_stats("FIFO", fifo_stats);
 
    Stats lru_stats = run_lru(ref_string);
 
     printf("\n");
-    printf("LRU Results\n");
-    printf("Hits        : %d\n", lru_stats.hits);
-    printf("Page Faults : %d\n", lru_stats.faults);
+    print_stats("LRU", lru_stats);
   return 0;
 }
