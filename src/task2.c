@@ -183,16 +183,16 @@ int main(void)
 	/* Reference string: the sequence of page numbers
      * 	the CPU requests. This simulates a program
      * 	accessing pages in this order.*/
-int ref_string[REF_LENGTH] =
-    {
-        0, 1, 2, 3,
-        0, 1, 4, 0,
-        1, 2, 3, 4
-    };
+int ref_string[REF_LENGTH] = {
+    2, 0, 1, 3,
+    2, 4, 0, 1,
+    2, 3, 4, 0
+};
 /*
 Pages 0–4 represent 5 distinct virtual pages.
      * With only 4 frames, the simulator must decide
-     * which page to evict when all frames are full.*/
+     * which page to evict when all frames are full.
+     */
 
     Stats fifo_stats = run_fifo(ref_string);
 
