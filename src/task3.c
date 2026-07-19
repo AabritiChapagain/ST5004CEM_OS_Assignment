@@ -70,7 +70,7 @@ unsigned long djb2_hash(const char *str)
 
     return hash;
 }
-// SECTION C: USER AUTHENTICATION
+// SECTION c: USER AUTHENTICATION
 
 
 void ensure_default_users(void)
@@ -141,18 +141,138 @@ int authenticate(const char *username, const char *password, Session *session)
     audit_log(username, "LOGIN_FAILED", "-");
     return 0;
 }
+// SECTION d: FILE PERMISSION SYSTEM
 
+
+int find_permission_entry(const char *path, char *owner_out,
+                           char *group_out, char *perm_out)
+{
+    FILE *fp = fopen(PERMS_DB, "r");
+
+    if (fp == NULL)
+    {
+        return -1; /* no permissions file yet -> no entries */
+    }
+
+    char line[MAX_LINE];
+    int found = -1;
+
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
+        char db_path[MAX_LINE], db_owner[MAX_NAME], db_group[MAX_NAME], db_perm[MAX_PERM];
+
+        line[strcspn(line, "\n")] = '\0';
+
+        if (sscanf(line, "%255[^:]:%63[^:]:%63[^:]:%9[^:\n]",
+                   db_path, db_owner, db_group, db_perm) != 4)
+        {
+            continue;
+        }
+
+        if (strcmp(db_path, path) == 0)
+        {
+            strcpy(owner_out, db_owner);
+            strcpy(group_out, db_group);
+            strcpy(perm_out, db_perm);
+            found = 0;
+            break;
+        }
+    }
+
+    fclose(fp);
+    return found;
+}
+
+int set_permission(const char *path, const char *owner,
+                    const char *group, const char *permstr)
+{
+    FILE *in = fopen(PERMS_DB, "r");
+    FILE *out = fopen("file_perms.tmp", "w");
+
+    if (out == NULL)
+    {
+        if (in) fclose(in);
+        perror("set_permission");
+        return -1;
+    }
+
+    if (in != NULL)
+    {
+        char line[MAX_LINE];
+
+        while (fgets(line, sizeof(line), in) != NULL)
+        {
+            char db_path[MAX_LINE];
+            sscanf(line, "%255[^:]", db_path);
+
+            if (strcmp(db_path, path) != 0)
+            {
+                fputs(line, out);
+            }
+        }
+
+        fclose(in);
+    }
+
+    fprintf(out, "%s:%s:%s:%s\n", path, owner, group, permstr);
+    fclose(out);
+
+    remove(PERMS_DB);
+    rename("file_perms.tmp", PERMS_DB);
+
+    return 0;
+}
+
+int check_permission(const Session *session, const char *path, char access_type)
+{
+    char owner[MAX_NAME], group[MAX_NAME], perm[MAX_PERM];
+
+    if (find_permission_entry(path, owner, group, perm) != 0)
+    {
+        printf("[DENY] No permission record found for '%s'.\n", path);
+        return 0;
+    }
+
+    int offset;
+
+    if (strcmp(session->username, owner) == 0)
+    {
+        offset = 0;
+    }
+    else if (strcmp(session->group, group) == 0)
+    {
+        offset = 3;
+    }
+    else
+    {
+        offset = 6;
+    }
+
+    char required = (access_type == 'r') ? 'r' : (access_type == 'w') ? 'w' : 'x';
+
+    if (perm[offset + (access_type == 'r' ? 0 : access_type == 'w' ? 1 : 2)] == required)
+    {
+        return 1;
+    }
+
+    printf("[DENY] User '%s' does not have '%c' permission on '%s'.\n",
+           session->username, access_type, path);
+
+    audit_log(session->username, "PERMISSION_DENIED", path);
+
+    return 0;
+}
 int main(void)
 {
-    printf("================================================\n");
+    printf("=================================================\n");
     printf(" Task 3 - Secure File Management System\n");
-    printf("================================================\n\n");
+    printf("=================================================\n\n");
 
     ensure_default_users();
 
     audit_log("system", "PROGRAM_START", "task3");
 
     printf("User authentication module implemented.\n");
-
+    printf("File permission system implemented.\n");
     return 0;
 }
