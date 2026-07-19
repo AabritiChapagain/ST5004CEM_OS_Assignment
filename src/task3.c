@@ -262,7 +262,7 @@ int check_permission(const Session *session, const char *path, char access_type)
 
     return 0;
 }
-// SECTION 4: XOR ENCRYPTION / DECRYPTION
+// SECTION e: XOR ENCRYPTION / DECRYPTION
 
 void xor_cipher(unsigned char *data, size_t len, const char *key)
 {
@@ -274,6 +274,126 @@ void xor_cipher(unsigned char *data, size_t len, const char *key)
     }
 }
 
+
+// SECTION f: FILE OPERATIONS (CREATE / WRITE / READ / DELETE)
+int file_create(const Session *session, const char *path, const char *permstr)
+{
+    int fd = open(path, O_CREAT | O_WRONLY | O_EXCL, 0644);
+
+    if (fd < 0)
+    {
+        perror("file_create");
+        audit_log(session->username, "CREATE_FAILED", path);
+        return -1;
+    }
+
+    close(fd);
+
+    /* Owner of a newly created file is always the creator. */
+    set_permission(path, session->username, session->group, permstr);
+
+    printf("[CREATE] '%s' created successfully (perms: %s, owner: %s).\n",
+           path, permstr, session->username);
+
+    audit_log(session->username, "CREATE", path);
+
+    return 0;
+}
+
+int file_write(const Session *session, const char *path,
+               const char *content, int encrypt, const char *key)
+{
+    if (!check_permission(session, path, 'w'))
+    {
+        return -1;
+    }
+
+    FILE *fp = fopen(path, "wb");
+
+    if (fp == NULL)
+    {
+        perror("file_write");
+        return -1;
+    }
+
+    size_t len = strlen(content);
+
+    if (encrypt)
+    {
+        unsigned char *buf = malloc(len);
+        memcpy(buf, content, len);
+        xor_cipher(buf, len, key);
+        fwrite(buf, 1, len, fp);
+        free(buf);
+    }
+    else
+    {
+        fwrite(content, 1, len, fp);
+    }
+
+    fclose(fp);
+
+    printf("[WRITE] %zu bytes written to '%s'%s.\n",
+           len, path, encrypt ? " (encrypted)" : "");
+
+    audit_log(session->username, encrypt ? "WRITE_ENCRYPTED" : "WRITE", path);
+
+    return 0;
+}
+
+int file_read(const Session *session, const char *path, int decrypt, const char *key)
+{
+    if (!check_permission(session, path, 'r'))
+    {
+        return -1;
+    }
+
+    FILE *fp = fopen(path, "rb");
+
+    if (fp == NULL)
+    {
+        perror("file_read");
+        return -1;
+    }
+
+    unsigned char buf[4096];
+    size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
+    fclose(fp);
+
+    if (decrypt)
+    {
+        xor_cipher(buf, n, key);
+    }
+
+    buf[n] = '\0';
+
+    printf("[READ] Contents of '%s'%s:\n%s\n", path,
+           decrypt ? " (decrypted)" : "", buf);
+
+    audit_log(session->username, decrypt ? "READ_ENCRYPTED" : "READ", path);
+
+    return 0;
+}
+
+int file_delete(const Session *session, const char *path)
+{
+    if (!check_permission(session, path, 'w')) /* deletion requires write */
+    {
+        return -1;
+    }
+
+    if (remove(path) != 0)
+    {
+        perror("file_delete");
+        return -1;
+    }
+
+    printf("[DELETE] '%s' deleted successfully.\n", path);
+
+    audit_log(session->username, "DELETE", path);
+
+    return 0;
+}
 
 int main(void)
 {
@@ -288,5 +408,6 @@ int main(void)
     printf("User authentication module implemented.\n");
     printf("File permission system implemented.\n");
     printf("Encryption module implemented.\n");
+    printf("File operation module implemented.\n");
     return 0;
 }
