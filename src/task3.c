@@ -262,6 +262,19 @@ int check_permission(const Session *session, const char *path, char access_type)
 
     return 0;
 }
+// SECTION 4: XOR ENCRYPTION / DECRYPTION
+
+void xor_cipher(unsigned char *data, size_t len, const char *key)
+{
+    size_t key_len = strlen(key);
+
+    for (size_t i = 0; i < len; i++)
+    {
+        data[i] ^= (unsigned char)key[i % key_len];
+    }
+}
+
+
 int main(void)
 {
     printf("=================================================\n");
@@ -274,5 +287,6 @@ int main(void)
 
     printf("User authentication module implemented.\n");
     printf("File permission system implemented.\n");
+    printf("Encryption module implemented.\n");
     return 0;
 }
