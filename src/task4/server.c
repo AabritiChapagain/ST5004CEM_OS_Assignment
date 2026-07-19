@@ -14,6 +14,7 @@ int main()
     socklen_t client_len = sizeof(client_addr);
 
     char buffer[BUFFER_SIZE];
+    int authenticated = 0;
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -35,25 +36,39 @@ int main()
     printf("Server listening on port %d...\n", PORT);
 
     client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
+recv(client_fd, buffer, sizeof(buffer), 0);
   printf("Received: %s\n", buffer);
-
-    if (strncmp(buffer, "ECHO ", 5) == 0)
+if (strncmp(buffer, "AUTH ", 5) == 0)
+{
+    if (strcmp(buffer + 5, "cw-secret-token") == 0)
     {
-        send(client_fd, buffer + 5, strlen(buffer + 5) + 1, 0);
-    }
-    else if (strcmp(buffer, "TIME") == 0)
-    {
-        time_t now = time(NULL);
-        char *t = ctime(&now);
-
-        send(client_fd, t, strlen(t) + 1, 0);
+        authenticated = 1;
+        strcpy(buffer, "OK:authenticated");
     }
     else
     {
-        char *msg = "Unknown Command";
-        send(client_fd, msg, strlen(msg) + 1, 0);
+        strcpy(buffer, "ERR:bad_token");
     }
+}
+else if (!authenticated)
+{
+    strcpy(buffer, "ERR:not_authenticated");
+}
+else if (strncmp(buffer, "ECHO ", 5) == 0)
+{
+    memmove(buffer, buffer + 5, strlen(buffer + 5) + 1);
+}
+else if (strcmp(buffer, "TIME") == 0)
+{
+    time_t now = time(NULL);
+    strcpy(buffer, ctime(&now));
+}
+else
+{
+    strcpy(buffer, "Unknown Command");
+}
 
+send(client_fd, buffer, strlen(buffer) + 1, 0);
     close(client_fd);
     close(server_fd);
 

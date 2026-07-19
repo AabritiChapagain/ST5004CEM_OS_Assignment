@@ -39,8 +39,21 @@ int main()
         perror("Connect");
         exit(EXIT_FAILURE);
     }
+printf("Connected to server.\n");
 
-    printf("Connected to server.\n");
+/* Authenticate first */
+strcpy(buffer, "AUTH cw-secret-token");
+send(sockfd, buffer, strlen(buffer) + 1, 0);
+
+recv(sockfd, buffer, BUFFER_SIZE, 0);
+printf("Server: %s\n", buffer);
+
+if (strcmp(buffer, "OK:authenticated") != 0)
+{
+    printf("Authentication failed.\n");
+    close(sockfd);
+    return 1;
+}
 
     printf("Enter command:\n");
     printf("1. ECHO Hello\n");
