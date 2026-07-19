@@ -330,6 +330,76 @@ int canWrite(char filename[])
     return 0;
 }
 
+void encryptFile()
+{
+    char filename[100];
+    FILE *fp;
+
+    printf("\nEnter file to encrypt: ");
+    scanf("%99s", filename);
+
+    fp = fopen(filename, "r+");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        return;
+    }
+
+    char ch;
+
+    while ((ch = fgetc(fp)) != EOF)
+    {
+        if (ch >= 'a' && ch <= 'z')
+            ch = ((ch - 'a' + 3) % 26) + 'a';
+        else if (ch >= 'A' && ch <= 'Z')
+            ch = ((ch - 'A' + 3) % 26) + 'A';
+
+        fseek(fp, -1, SEEK_CUR);
+        fputc(ch, fp);
+        fflush(fp);
+    }
+
+    fclose(fp);
+
+    printf("File encrypted successfully.\n");
+}
+
+void decryptFile()
+{
+    char filename[100];
+    FILE *fp;
+
+    printf("\nEnter file to decrypt: ");
+    scanf("%99s", filename);
+
+    fp = fopen(filename, "r+");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        return;
+    }
+
+    char ch;
+
+    while ((ch = fgetc(fp)) != EOF)
+    {
+        if (ch >= 'a' && ch <= 'z')
+            ch = ((ch - 'a' - 3 + 26) % 26) + 'a';
+        else if (ch >= 'A' && ch <= 'Z')
+            ch = ((ch - 'A' - 3 + 26) % 26) + 'A';
+
+        fseek(fp, -1, SEEK_CUR);
+        fputc(ch, fp);
+        fflush(fp);
+    }
+
+    fclose(fp);
+
+    printf("File decrypted successfully.\n");
+}
+
 int main()
 {
     printf("__________________________________\n");
@@ -355,5 +425,13 @@ writeFile();
 readFile();
 
 deleteFile();
+
+encryptFile();
+
+readFile();
+
+decryptFile();
+
+readFile();
 return 0;
 }
