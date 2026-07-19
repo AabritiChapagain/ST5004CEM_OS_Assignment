@@ -9,15 +9,15 @@
 
 int main()
 {
-    int server_fd, client_fd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_len = sizeof(client_addr);
+    int sockfd;
+
+    struct sockaddr_in server_addr;
 
     char buffer[BUFFER_SIZE];
 
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (server_fd < 0)
+    if (sockfd < 0)
     {
         perror("Socket");
         exit(EXIT_FAILURE);
@@ -26,41 +26,36 @@ int main()
     memset(&server_addr, 0, sizeof(server_addr));
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    inet_pton(AF_INET,
+              "127.0.0.1",
+              &server_addr.sin_addr);
+
+    if (connect(sockfd,
+                (struct sockaddr *)&server_addr,
+                sizeof(server_addr)) < 0)
     {
-        perror("Bind");
+        perror("Connect");
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 5) < 0)
-    {
-        perror("Listen");
-        exit(EXIT_FAILURE);
-    }
+    printf("Connected to server.\n");
 
-    printf("Server listening on port %d...\n", PORT);
+    printf("Enter command:\n");
+    printf("1. ECHO Hello\n");
+    printf("2. TIME\n\n");
 
-    client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
+    fgets(buffer, sizeof(buffer), stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
 
-    if (client_fd < 0)
-    {
-        perror("Accept");
-        exit(EXIT_FAILURE);
-    }
+    send(sockfd, buffer, strlen(buffer) + 1, 0);
 
-    printf("Client connected.\n");
+    recv(sockfd, buffer, sizeof(buffer), 0);
 
-    recv(client_fd, buffer, sizeof(buffer), 0);
+    printf("Server Response: %s\n", buffer);
 
-    printf("Received: %s\n", buffer);
-
-    send(client_fd, "Connection successful.", 22, 0);
-
-    close(client_fd);
-    close(server_fd);
+    close(sockfd);
 
     return 0;
 }

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include<time.h>
 #define PORT 5050
 #define BUFFER_SIZE 512
 
@@ -29,35 +29,30 @@ int main()
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        perror("Bind");
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(server_fd, 5) < 0)
-    {
-        perror("Listen");
-        exit(EXIT_FAILURE);
-    }
+     bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+     listen(server_fd, 5);
 
     printf("Server listening on port %d...\n", PORT);
 
     client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
+  printf("Received: %s\n", buffer);
 
-    if (client_fd < 0)
+    if (strncmp(buffer, "ECHO ", 5) == 0)
     {
-        perror("Accept");
-        exit(EXIT_FAILURE);
+        send(client_fd, buffer + 5, strlen(buffer + 5) + 1, 0);
     }
+    else if (strcmp(buffer, "TIME") == 0)
+    {
+        time_t now = time(NULL);
+        char *t = ctime(&now);
 
-    printf("Client connected.\n");
-
-    recv(client_fd, buffer, sizeof(buffer), 0);
-
-    printf("Received: %s\n", buffer);
-
-    send(client_fd, "Connection successful.", 22, 0);
+        send(client_fd, t, strlen(t) + 1, 0);
+    }
+    else
+    {
+        char *msg = "Unknown Command";
+        send(client_fd, msg, strlen(msg) + 1, 0);
+    }
 
     close(client_fd);
     close(server_fd);
