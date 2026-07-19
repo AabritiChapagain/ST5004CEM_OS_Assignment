@@ -33,6 +33,7 @@ int canWrite(char filename[]);
 void encryptFile();
 void decryptFile();
 void writeAuditLog(char action[], char filename[], char status[]);
+void menu();
 //authentication
 void createDefaultUsers()
 {
@@ -434,38 +435,89 @@ void writeAuditLog(char action[], char filename[], char status[])
     fclose(fp);
 }
 
+void menu()
+{
+    int choice;
+
+    do
+    {
+        printf("\n___________________________________\n");
+        printf(" Secure File Management System\n");
+        printf("_____________________________________\n");
+        printf("1. Create File\n");
+        printf("2. Write File\n");
+        printf("3. Read File\n");
+        printf("4. Delete File\n");
+        printf("5. Set Permissions\n");
+        printf("6. Encrypt File\n");
+        printf("7. Decrypt File\n");
+        printf("8. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch(choice)
+        {
+            case 1:
+                createFile();
+                break;
+
+            case 2:
+                writeFile();
+                break;
+
+            case 3:
+                readFile();
+                break;
+
+            case 4:
+                deleteFile();
+                break;
+
+            case 5:
+                setPermission();
+                break;
+
+            case 6:
+                encryptFile();
+                break;
+
+            case 7:
+                decryptFile();
+                break;
+
+            case 8:
+                printf("Exiting program...\n");
+                break;
+
+            default:
+                printf("Invalid choice.\n");
+        }
+
+    } while(choice != 8);
+}
+
 int main()
 {
     printf("__________________________________\n");
     printf(" Secure File Management System\n");
     printf("__________________________________\n\n");
 
+    printf("__________________________________\n");
     printf("Project initialized successfully.\n");
 
+    printf("__________________________________\n");
  createDefaultUsers();
 
 if (!login())
 {
     return 1;
 }
+
+    printf("__________________________________\n");
 printf("\nAuthentication module loaded successfully.\n");
 
-createFile();
-
-setPermission();
-
-writeFile();
-
-readFile();
-
-deleteFile();
-
-encryptFile();
-
-readFile();
-
-decryptFile();
-
-readFile();
+    printf("__________________________________\n");
+menu();
 return 0;
 }
+
