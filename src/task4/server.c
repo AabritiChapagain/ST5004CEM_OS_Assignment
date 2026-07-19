@@ -8,6 +8,18 @@
 #define PORT 5050
 #define BUFFER_SIZE 512
 
+
+int validate_input(const char *input)
+{
+    if (input == NULL)
+        return 0;
+
+    if (strlen(input) == 0 || strlen(input) >= BUFFER_SIZE)
+        return 0;
+
+    return 1;
+}
+
 void *handle_client(void *arg)
 {
     int client_fd = *(int *)arg;
@@ -15,10 +27,25 @@ void *handle_client(void *arg)
 
     char buffer[BUFFER_SIZE];
 
-    recv(client_fd, buffer, sizeof(buffer), 0);
+int bytes = recv(client_fd, buffer, sizeof(buffer), 0);
+
+if (bytes <= 0)
+{
+    close(client_fd);
+    return NULL;
+}
+
+buffer[bytes] = '\0';
 
     printf("Received: %s\n", buffer);
 
+if (!validate_input(buffer))
+{
+    strcpy(buffer, "ERR:invalid_input");
+    send(client_fd, buffer, strlen(buffer) + 1, 0);
+    close(client_fd);
+    return NULL;
+}
     if (strncmp(buffer, "AUTH ", 5) == 0)
     {
         if (strcmp(buffer + 5, "cw-secret-token") == 0)
@@ -42,9 +69,8 @@ void *handle_client(void *arg)
     }
     else
     {
-        char *msg = "Unknown Command";
-        send(client_fd, msg, strlen(msg) + 1, 0);
-    }
+strcpy(buffer, "ERR:unknown_command");
+send(client_fd, buffer, strlen(buffer) + 1, 0);    }
 
     close(client_fd);
     return NULL;
