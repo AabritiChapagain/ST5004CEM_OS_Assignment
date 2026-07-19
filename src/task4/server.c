@@ -31,6 +31,7 @@ int bytes = recv(client_fd, buffer, sizeof(buffer), 0);
 
 if (bytes <= 0)
 {
+printf("Client disconnected.\n");
     close(client_fd);
     return NULL;
 }
@@ -55,7 +56,8 @@ if (!validate_input(buffer))
         else
         {
             strcpy(buffer, "ERR:bad_token");
-        }
+        }   
+             send(client_fd, buffer, strlen(buffer) + 1, 0);
     }
     else if (strncmp(buffer, "ECHO ", 5) == 0)
     {
@@ -71,9 +73,9 @@ if (!validate_input(buffer))
     {
 strcpy(buffer, "ERR:unknown_command");
 send(client_fd, buffer, strlen(buffer) + 1, 0);    }
-
-    close(client_fd);
-    return NULL;
+printf("Client disconnected.\n");
+close(client_fd);
+return NULL;
 }
 int main()
 {
@@ -81,8 +83,6 @@ int main()
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    char buffer[BUFFER_SIZE];
-    int authenticated = 0;
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -98,23 +98,56 @@ int main()
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-     bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-     listen(server_fd, 5);
-
+if (bind(server_fd,
+         (struct sockaddr *)&server_addr,
+         sizeof(server_addr)) < 0)
+{
+    perror("bind");
+    close(server_fd);
+    exit(EXIT_FAILURE);
+}
+ if (listen(server_fd, 5) < 0)
+{
+    perror("listen");
+    close(server_fd);
+    exit(EXIT_FAILURE);
+}
     printf("Server listening on port %d...\n", PORT);
 while (1)
 {
-    client_fd = accept(server_fd,
-                       (struct sockaddr *)&client_addr,
-                       &client_len);
+ client_fd = accept(server_fd,
+                   (struct sockaddr *)&client_addr,
+                   &client_len);
 
-    int *new_sock = malloc(sizeof(int));
-    *new_sock = client_fd;
+if (client_fd < 0)
+{
+    perror("accept");
+    continue;
+}
 
+printf("Client connected.\n");
+
+int *new_sock = malloc(sizeof(int));
+
+if (new_sock == NULL)
+{
+    perror("malloc");
+    close(client_fd);
+    continue;
+}
+
+*new_sock = client_fd;
     pthread_t tid;
-
-    pthread_create(&tid, NULL, handle_client, new_sock);
+if (pthread_create(&tid, NULL, handle_client, new_sock) != 0)
+{
+    perror("pthread_create");
+    close(client_fd);
+    free(new_sock);
+}
+else
+{
     pthread_detach(tid);
+}
 }
    close(server_fd);
 
