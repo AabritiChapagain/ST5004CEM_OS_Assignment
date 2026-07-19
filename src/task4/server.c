@@ -3,10 +3,52 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include<time.h>
 #define PORT 5050
 #define BUFFER_SIZE 512
 
+void *handle_client(void *arg)
+{
+    int client_fd = *(int *)arg;
+    free(arg);
+
+    char buffer[BUFFER_SIZE];
+
+    recv(client_fd, buffer, sizeof(buffer), 0);
+
+    printf("Received: %s\n", buffer);
+
+    if (strncmp(buffer, "AUTH ", 5) == 0)
+    {
+        if (strcmp(buffer + 5, "cw-secret-token") == 0)
+        {
+            strcpy(buffer, "OK:authenticated");
+        }
+        else
+        {
+            strcpy(buffer, "ERR:bad_token");
+        }
+    }
+    else if (strncmp(buffer, "ECHO ", 5) == 0)
+    {
+        send(client_fd, buffer + 5, strlen(buffer + 5) + 1, 0);
+    }
+    else if (strcmp(buffer, "TIME") == 0)
+    {
+        time_t now = time(NULL);
+        char *t = ctime(&now);
+        send(client_fd, t, strlen(t) + 1, 0);
+    }
+    else
+    {
+        char *msg = "Unknown Command";
+        send(client_fd, msg, strlen(msg) + 1, 0);
+    }
+
+    close(client_fd);
+    return NULL;
+}
 int main()
 {
     int server_fd, client_fd;
@@ -34,43 +76,21 @@ int main()
      listen(server_fd, 5);
 
     printf("Server listening on port %d...\n", PORT);
+while (1)
+{
+    client_fd = accept(server_fd,
+                       (struct sockaddr *)&client_addr,
+                       &client_len);
 
-    client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
-recv(client_fd, buffer, sizeof(buffer), 0);
-  printf("Received: %s\n", buffer);
-if (strncmp(buffer, "AUTH ", 5) == 0)
-{
-    if (strcmp(buffer + 5, "cw-secret-token") == 0)
-    {
-        authenticated = 1;
-        strcpy(buffer, "OK:authenticated");
-    }
-    else
-    {
-        strcpy(buffer, "ERR:bad_token");
-    }
-}
-else if (!authenticated)
-{
-    strcpy(buffer, "ERR:not_authenticated");
-}
-else if (strncmp(buffer, "ECHO ", 5) == 0)
-{
-    memmove(buffer, buffer + 5, strlen(buffer + 5) + 1);
-}
-else if (strcmp(buffer, "TIME") == 0)
-{
-    time_t now = time(NULL);
-    strcpy(buffer, ctime(&now));
-}
-else
-{
-    strcpy(buffer, "Unknown Command");
-}
+    int *new_sock = malloc(sizeof(int));
+    *new_sock = client_fd;
 
-send(client_fd, buffer, strlen(buffer) + 1, 0);
-    close(client_fd);
-    close(server_fd);
+    pthread_t tid;
+
+    pthread_create(&tid, NULL, handle_client, new_sock);
+    pthread_detach(tid);
+}
+   close(server_fd);
 
     return 0;
 }
