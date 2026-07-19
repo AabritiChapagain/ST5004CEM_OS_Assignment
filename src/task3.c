@@ -30,6 +30,8 @@ void deleteFile();
 void setPermission();
 int canRead(char filename[]);
 int canWrite(char filename[]);
+void encryptFile();
+void decryptFile();
 //authentication
 void createDefaultUsers()
 {
@@ -134,8 +136,12 @@ void writeFile()
     printf("\nEnter file name: ");
     scanf("%99s", filename);
 
+if (!canWrite(filename))
+{
+    printf("Write permission denied.\n");
+    return;
+}
     getchar();
-
     printf("Enter text: ");
     fgets(text, sizeof(text), stdin);
 
@@ -160,7 +166,11 @@ void readFile()
 
     printf("\nEnter file name: ");
     scanf("%99s", filename);
-
+if (!canRead(filename))
+{
+    printf("Read permission denied.\n");
+    return;
+}
     FILE *fp = fopen(filename, "r");
 
     if (fp == NULL)
@@ -337,9 +347,13 @@ if (!login())
 printf("\nAuthentication module loaded successfully.\n");
 
 createFile();
-writeFile();
-readFile();
-deleteFile();
+
 setPermission();
+
+writeFile();
+
+readFile();
+
+deleteFile();
 return 0;
 }
