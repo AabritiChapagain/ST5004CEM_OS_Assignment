@@ -32,6 +32,7 @@ int canRead(char filename[]);
 int canWrite(char filename[]);
 void encryptFile();
 void decryptFile();
+void writeAuditLog(char action[], char filename[], char status[]);
 //authentication
 void createDefaultUsers()
 {
@@ -121,13 +122,16 @@ void createFile()
     if (fp == NULL)
     {
         printf("Unable to create file.\n");
+writeAuditLog("CREATE", filename, "FAILED");
         return;
     }
 
     fclose(fp);
 
     printf("File created successfully.\n");
+writeAuditLog("CREATE", filename, "SUCCESS");
 }
+
 void writeFile()
 {
     char filename[100];
@@ -158,6 +162,7 @@ if (!canWrite(filename))
     fclose(fp);
 
     printf("Data written successfully.\n");
+writeAuditLog("WRITE", filename, "SUCCESS");
 }
 void readFile()
 {
@@ -185,6 +190,7 @@ if (!canRead(filename))
     {
         printf("%s", line);
     }
+ writeAuditLog("READ", filename, "SUCCESS");
 
     fclose(fp);
 }
@@ -195,14 +201,16 @@ void deleteFile()
     printf("\nEnter file name: ");
     scanf("%99s", filename);
 
-    if (remove(filename) == 0)
-    {
-        printf("File deleted successfully.\n");
-    }
-    else
-    {
-        printf("Unable to delete file.\n");
-    }
+ if (remove(filename) == 0)
+{
+    printf("File deleted successfully.\n");
+    writeAuditLog("DELETE", filename, "SUCCESS");
+}
+else
+{
+    printf("Unable to delete file.\n");
+    writeAuditLog("DELETE", filename, "FAILED");
+}
 }
 
 void setPermission()
@@ -244,6 +252,7 @@ void setPermission()
     fclose(fp);
 
     printf("Permissions saved successfully.\n");
+writeAuditLog("SET_PERMISSION", filename, "SUCCESS");
 }
 
 int canRead(char filename[])
@@ -363,6 +372,7 @@ void encryptFile()
     fclose(fp);
 
     printf("File encrypted successfully.\n");
+writeAuditLog("ENCRYPT", filename, "SUCCESS");
 }
 
 void decryptFile()
@@ -398,6 +408,30 @@ void decryptFile()
     fclose(fp);
 
     printf("File decrypted successfully.\n");
+writeAuditLog("DECRYPT", filename, "SUCCESS");
+}
+
+void writeAuditLog(char action[], char filename[], char status[])
+{
+    FILE *fp = fopen(AUDIT_LOG, "a");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open audit log.\n");
+        return;
+    }
+
+    time_t now = time(NULL);
+
+    fprintf(fp,
+            "%s | User: %s | Action: %s | File: %s | Status: %s\n",
+            ctime(&now),
+            currentUser.username,
+            action,
+            filename,
+            status);
+
+    fclose(fp);
 }
 
 int main()
