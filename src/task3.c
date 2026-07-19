@@ -395,6 +395,31 @@ int file_delete(const Session *session, const char *path)
     return 0;
 }
 
+
+// SECTION g: LOGIN PROMPT
+
+int login_prompt(Session *session)
+{
+    char username[MAX_NAME];
+    char password[MAX_NAME];
+
+    printf("Username: ");
+    if (fgets(username, sizeof(username), stdin) == NULL) return 0;
+    username[strcspn(username, "\n")] = '\0';
+
+    printf("Password: ");
+    if (fgets(password, sizeof(password), stdin) == NULL) return 0;
+    password[strcspn(password, "\n")] = '\0';
+
+    if (authenticate(username, password, session))
+    {
+        printf("[AUTH] Welcome, %s (group: %s).\n\n", session->username, session->group);
+        return 1;
+    }
+
+    printf("[AUTH] Invalid username or password.\n");
+    return 0;
+}
 int main(void)
 {
     printf("=================================================\n");
@@ -405,6 +430,45 @@ int main(void)
 
     audit_log("system", "PROGRAM_START", "task3");
 
+ Session session;
+
+    if (!login_prompt(&session))
+    {
+        audit_log("system", "PROGRAM_ABORTED", "authentication failed");
+        return 1;
+    }
+
+/* Demonstration 1: Plain file */
+    remove("notes.txt");
+    file_create(&session, "notes.txt", "rw-r-----");
+    file_write(&session,
+               "notes.txt",
+               "Operating Systems Coursework\nAuthor: Labish Parajuli\n",
+               0,
+               NULL);
+    file_read(&session, "notes.txt", 0, NULL);
+
+    /* Demonstration 2: Encrypted file */
+    const char *secret_key = "ST5004CEM-Secret";
+
+    remove("secret.txt");
+    file_create(&session, "secret.txt", "rw-------");
+    file_write(&session,
+               "secret.txt",
+               "Confidential exam notes - encrypted at rest.\n",
+               1,
+               secret_key);
+    file_read(&session, "secret.txt", 1, secret_key);
+/* --- Demonstration 3: permission enforcement --- */
+    printf("\n--- Simulating access by a second, unauthorized user ---\n");
+    Session other = { .username = "guest", .group = "guest" };
+    file_read(&other, "secret.txt", 1, secret_key); /* should be denied: no rwx for others */
+
+    /* --- Cleanup --- */
+    file_delete(&session, "notes.txt");
+    file_delete(&session, "secret.txt");
+
+    audit_log(session.username, "PROGRAM_END", "task3");
     printf("User authentication module implemented.\n");
     printf("File permission system implemented.\n");
     printf("Encryption module implemented.\n");

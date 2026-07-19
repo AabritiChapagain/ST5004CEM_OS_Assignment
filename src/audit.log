@@ -3,3 +3,27 @@
 2026-07-19 06:21:12 | User: system     | Action: PROGRAM_START   | Target: task3
 2026-07-19 06:23:20 | User: system     | Action: PROGRAM_START   | Target: task3
 2026-07-19 06:26:38 | User: system     | Action: PROGRAM_START   | Target: task3
+2026-07-19 06:33:07 | User: system     | Action: PROGRAM_START   | Target: task3
+2026-07-19 06:33:16 | User: admin      | Action: LOGIN_SUCCESS   | Target: -
+2026-07-19 06:33:16 | User: admin      | Action: CREATE          | Target: notes.txt
+2026-07-19 06:33:16 | User: admin      | Action: WRITE           | Target: notes.txt
+2026-07-19 06:33:16 | User: admin      | Action: READ            | Target: notes.txt
+2026-07-19 06:33:16 | User: admin      | Action: CREATE          | Target: secret.txt
+2026-07-19 06:33:16 | User: admin      | Action: WRITE_ENCRYPTED | Target: secret.txt
+2026-07-19 06:33:16 | User: admin      | Action: READ_ENCRYPTED  | Target: secret.txt
+2026-07-19 06:33:16 | User: admin      | Action: PROGRAM_END     | Target: task3
+2026-07-19 06:34:57 | User: system     | Action: PROGRAM_START   | Target: task3
+2026-07-19 06:35:05 | User: aabriti    | Action: LOGIN_FAILED    | Target: -
+2026-07-19 06:35:05 | User: system     | Action: PROGRAM_ABORTED | Target: authentication failed
+2026-07-19 06:35:11 | User: system     | Action: PROGRAM_START   | Target: task3
+2026-07-19 06:35:16 | User: admin      | Action: LOGIN_SUCCESS   | Target: -
+2026-07-19 06:35:16 | User: admin      | Action: CREATE          | Target: notes.txt
+2026-07-19 06:35:16 | User: admin      | Action: WRITE           | Target: notes.txt
+2026-07-19 06:35:16 | User: admin      | Action: READ            | Target: notes.txt
+2026-07-19 06:35:16 | User: admin      | Action: CREATE          | Target: secret.txt
+2026-07-19 06:35:16 | User: admin      | Action: WRITE_ENCRYPTED | Target: secret.txt
+2026-07-19 06:35:16 | User: admin      | Action: READ_ENCRYPTED  | Target: secret.txt
+2026-07-19 06:35:16 | User: guest      | Action: PERMISSION_DENIED | Target: secret.txt
+2026-07-19 06:35:16 | User: admin      | Action: DELETE          | Target: notes.txt
+2026-07-19 06:35:16 | User: admin      | Action: DELETE          | Target: secret.txt
+2026-07-19 06:35:16 | User: admin      | Action: PROGRAM_END     | Target: task3
