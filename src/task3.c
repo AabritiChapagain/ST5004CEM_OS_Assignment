@@ -23,6 +23,10 @@ typedef struct
 Session currentUser;
 void createDefaultUsers();
 int login();
+void createFile();
+void writeFile();
+void readFile();
+void deleteFile();
 //authentication
 void createDefaultUsers()
 {
@@ -100,6 +104,94 @@ while (fscanf(fp,
 
     return 0;
 }
+void createFile()
+{
+    char filename[100];
+
+    printf("\nEnter file name: ");
+    scanf("%99s", filename);
+
+    FILE *fp = fopen(filename, "w");
+
+    if (fp == NULL)
+    {
+        printf("Unable to create file.\n");
+        return;
+    }
+
+    fclose(fp);
+
+    printf("File created successfully.\n");
+}
+void writeFile()
+{
+    char filename[100];
+    char text[500];
+
+    printf("\nEnter file name: ");
+    scanf("%99s", filename);
+
+    getchar();
+
+    printf("Enter text: ");
+    fgets(text, sizeof(text), stdin);
+
+    FILE *fp = fopen(filename, "a");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        return;
+    }
+
+    fprintf(fp, "%s", text);
+
+    fclose(fp);
+
+    printf("Data written successfully.\n");
+}
+void readFile()
+{
+    char filename[100];
+    char line[500];
+
+    printf("\nEnter file name: ");
+    scanf("%99s", filename);
+
+    FILE *fp = fopen(filename, "r");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        return;
+    }
+
+    printf("\n----- File Content -----\n");
+
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
+        printf("%s", line);
+    }
+
+    fclose(fp);
+}
+void deleteFile()
+{
+    char filename[100];
+
+    printf("\nEnter file name: ");
+    scanf("%99s", filename);
+
+    if (remove(filename) == 0)
+    {
+        printf("File deleted successfully.\n");
+    }
+    else
+    {
+        printf("Unable to delete file.\n");
+    }
+}
+
 int main()
 {
     printf("__________________________________\n");
@@ -116,5 +208,9 @@ if (!login())
 }
 printf("\nAuthentication module loaded successfully.\n");
 
+createFile();
+writeFile();
+readFile();
+deleteFile();
 return 0;
 }
