@@ -11,7 +11,7 @@
 #define MAX_NAME   64
 #define MAX_PERM   10
 #define USERS_DB   "users.db"
-#define PERMS_DB   "file_perms.db"
+#define PERMISSION_DB "permissions.db"
 #define AUDIT_LOG  "audit.log"
 
 typedef struct
@@ -27,6 +27,9 @@ void createFile();
 void writeFile();
 void readFile();
 void deleteFile();
+void setPermission();
+int canRead(char filename[]);
+int canWrite(char filename[]);
 //authentication
 void createDefaultUsers()
 {
@@ -192,6 +195,131 @@ void deleteFile()
     }
 }
 
+void setPermission()
+{
+    char filename[100];
+    char ownerPerm[4];
+    char groupPerm[4];
+    char otherPerm[4];
+
+    printf("\nFile name: ");
+    scanf("%99s", filename);
+
+    printf("Owner permissions (e.g. rwx): ");
+    scanf("%3s", ownerPerm);
+
+    printf("Group permissions (e.g. r--): ");
+    scanf("%3s", groupPerm);
+
+    printf("Other permissions (e.g. ---): ");
+    scanf("%3s", otherPerm);
+
+    FILE *fp = fopen(PERMISSION_DB, "a");
+
+    if (fp == NULL)
+    {
+        printf("Unable to open permissions database.\n");
+        return;
+    }
+
+    fprintf(fp,
+            "%s %s %s %s %s %s\n",
+            filename,
+            currentUser.username,
+            currentUser.group,
+            ownerPerm,
+            groupPerm,
+            otherPerm);
+
+    fclose(fp);
+
+    printf("Permissions saved successfully.\n");
+}
+
+int canRead(char filename[])
+{
+    FILE *fp = fopen(PERMISSION_DB, "r");
+
+    if (fp == NULL)
+        return 0;
+
+    char file[100];
+    char owner[50];
+    char group[50];
+    char ownerPerm[4];
+    char groupPerm[4];
+    char otherPerm[4];
+
+    while (fscanf(fp,
+                  "%99s %49s %49s %3s %3s %3s",
+                  file,
+                  owner,
+                  group,
+                  ownerPerm,
+                  groupPerm,
+                  otherPerm) == 6)
+    {
+        if (strcmp(file, filename) == 0)
+        {
+            fclose(fp);
+
+            if (strcmp(owner, currentUser.username) == 0)
+                return ownerPerm[0] == 'r';
+
+            if (strcmp(group, currentUser.group) == 0)
+                return groupPerm[0] == 'r';
+
+            return otherPerm[0] == 'r';
+        }
+    }
+
+    fclose(fp);
+
+    return 0;
+}
+
+int canWrite(char filename[])
+{
+    FILE *fp = fopen(PERMISSION_DB, "r");
+
+    if (fp == NULL)
+        return 0;
+
+    char file[100];
+    char owner[50];
+    char group[50];
+    char ownerPerm[4];
+    char groupPerm[4];
+    char otherPerm[4];
+
+    while (fscanf(fp,
+                  "%99s %49s %49s %3s %3s %3s",
+                  file,
+                  owner,
+                  group,
+                  ownerPerm,
+                  groupPerm,
+                  otherPerm) == 6)
+    {
+        if (strcmp(file, filename) == 0)
+        {
+            fclose(fp);
+
+            if (strcmp(owner, currentUser.username) == 0)
+                return ownerPerm[1] == 'w';
+
+            if (strcmp(group, currentUser.group) == 0)
+                return groupPerm[1] == 'w';
+
+            return otherPerm[1] == 'w';
+        }
+    }
+
+    fclose(fp);
+
+    return 0;
+}
+
 int main()
 {
     printf("__________________________________\n");
@@ -212,5 +340,6 @@ createFile();
 writeFile();
 readFile();
 deleteFile();
+setPermission();
 return 0;
 }
